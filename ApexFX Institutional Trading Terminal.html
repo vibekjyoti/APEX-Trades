@@ -1,0 +1,2130 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexFX Pro | Institutional Forex Trading Terminal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono for financial numbers -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        terminal: {
+                            950: '#070a12',
+                            900: '#0b0f19',
+                            800: '#111827',
+                            750: '#161f33',
+                            700: '#1e293b',
+                            600: '#334155',
+                        },
+                        bull: {
+                            DEFAULT: '#10b981',
+                            dark: '#059669',
+                            glow: 'rgba(16, 185, 129, 0.15)'
+                        },
+                        bear: {
+                            DEFAULT: '#f43f5e',
+                            dark: '#e11d48',
+                            glow: 'rgba(244, 63, 94, 0.15)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar for Terminal Aesthetic */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        /* Price Flash Animations */
+        @keyframes flashBull {
+            0% { background-color: rgba(16, 185, 129, 0.35); }
+            100% { background-color: transparent; }
+        }
+        @keyframes flashBear {
+            0% { background-color: rgba(244, 63, 94, 0.35); }
+            100% { background-color: transparent; }
+        }
+        .flash-up {
+            animation: flashBull 0.45s ease-out;
+        }
+        .flash-down {
+            animation: flashBear 0.45s ease-out;
+        }
+
+        /* Remove number input spinners */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="bg-terminal-950 text-slate-200 font-sans antialiased selection:bg-blue-500 selection:text-white overflow-x-hidden lg:overflow-hidden lg:h-screen flex flex-col">
+
+    <!-- ================= TOP ACCOUNT SUMMARY HEADER ================= -->
+    <header class="bg-terminal-900 border-b border-slate-800/80 px-3 py-2 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20">
+        <!-- Brand & Status -->
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-chart-line text-white text-sm"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-bold tracking-tight text-white text-base">APEX<span class="text-emerald-400">FX</span></span>
+                        <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">ECN Pro</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[10px] text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>LD4 London Equinix • 14ms</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden xl:flex items-center gap-2 pl-4 border-l border-slate-800 text-xs text-slate-400">
+                <span>Leverage:</span>
+                <select id="leverageSelect" class="bg-terminal-800 text-white font-mono font-semibold px-2 py-1 rounded border border-slate-700 focus:outline-none focus:border-blue-500 text-xs cursor-pointer">
+                    <option value="100" selected>1:100</option>
+                    <option value="200">1:200</option>
+                    <option value="500">1:500</option>
+                    <option value="30">1:30</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Real-Time Account Metrics Bar -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-5 bg-terminal-950/90 px-3.5 py-1.5 rounded-xl border border-slate-800/90">
+            <div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Balance</div>
+                <div id="accBalance" class="font-mono text-xs sm:text-sm font-semibold text-white">$100,000.00</div>
+            </div>
+            <div class="h-6 w-[1px] bg-slate-800 hidden sm:block"></div>
+            <div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Equity</div>
+                <div id="accEquity" class="font-mono text-xs sm:text-sm font-semibold text-white">$100,000.00</div>
+            </div>
+            <div class="h-6 w-[1px] bg-slate-800 hidden sm:block"></div>
+            <div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Floating P&L</div>
+                <div id="accPnL" class="font-mono text-xs sm:text-sm font-semibold text-slate-400">$0.00</div>
+            </div>
+            <div class="h-6 w-[1px] bg-slate-800 hidden md:block"></div>
+            <div class="hidden md:block">
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Used Margin</div>
+                <div id="accUsedMargin" class="font-mono text-xs sm:text-sm font-medium text-slate-300">$0.00</div>
+            </div>
+            <div class="h-6 w-[1px] bg-slate-800 hidden md:block"></div>
+            <div class="hidden md:block">
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Free Margin</div>
+                <div id="accFreeMargin" class="font-mono text-xs sm:text-sm font-medium text-slate-300">$100,000.00</div>
+            </div>
+            <div class="h-6 w-[1px] bg-slate-800 hidden lg:block"></div>
+            <div class="hidden lg:block">
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Margin Level</div>
+                <div id="accMarginLevel" class="font-mono text-xs sm:text-sm font-semibold text-emerald-400">0.00%</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions & Clock -->
+        <div class="flex items-center gap-2.5">
+            <button id="depositModalBtn" class="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition flex items-center gap-1.5">
+                <i class="fa-solid fa-wallet"></i>
+                <span class="hidden sm:inline">Reset / Fund</span>
+            </button>
+            <div class="hidden sm:flex items-center gap-2 bg-terminal-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 text-xs font-mono text-slate-300">
+                <i class="fa-regular fa-clock text-slate-400"></i>
+                <span id="utcClock">12:00:00 UTC</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================= MAIN WORKSPACE GRID ================= -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
+
+        <!-- 1. LEFT PANEL: LIVE MARKET WATCHLIST -->
+        <aside class="w-full lg:w-72 xl:w-80 bg-terminal-900 border-b lg:border-b-0 lg:border-r border-slate-800/80 flex flex-col shrink-0 max-h-72 lg:max-h-none">
+            <!-- Watchlist Header & Search -->
+            <div class="p-2.5 border-b border-slate-800/80 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-earth-americas text-blue-400 text-xs"></i>
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Market Watch</h2>
+                </div>
+                <div class="relative flex-1 max-w-[140px]">
+                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-slate-500 text-[11px]"></i>
+                    <input id="pairSearchInput" type="text" placeholder="Filter pairs..." class="w-full bg-terminal-950 text-xs text-slate-200 pl-7 pr-2 py-1 rounded border border-slate-800 focus:outline-none focus:border-blue-500">
+                </div>
+            </div>
+
+            <!-- Column Headers -->
+            <div class="grid grid-cols-12 px-3 py-1.5 bg-terminal-950/60 text-[10px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800/60">
+                <div class="col-span-5">Symbol</div>
+                <div class="col-span-3 text-right">Bid</div>
+                <div class="col-span-3 text-right">Ask</div>
+                <div class="col-span-1 text-right">Sprd</div>
+            </div>
+
+            <!-- Watchlist Items Container -->
+            <div id="watchlistContainer" class="flex-1 overflow-y-auto divide-y divide-slate-800/50">
+                <!-- Populated dynamically via JS -->
+            </div>
+
+            <!-- Market Sentiment Mini Widget -->
+            <div class="p-3 bg-terminal-950/70 border-t border-slate-800/80 hidden lg:block">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="text-slate-400 font-medium">Institutional Sentiment</span>
+                    <span id="sentimentPairLabel" class="font-mono font-semibold text-white">EUR/USD</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-bear overflow-hidden flex">
+                    <div id="sentimentBullBar" class="bg-bull h-full transition-all duration-500" style="width: 58%"></div>
+                </div>
+                <div class="flex justify-between text-[11px] font-mono mt-1">
+                    <span id="sentimentBullText" class="text-emerald-400">58% Long</span>
+                    <span id="sentimentBearText" class="text-rose-400">42% Short</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 2. CENTER PANEL: CHART + BOTTOM POSITIONS DRAWER -->
+        <section class="flex-1 flex flex-col min-w-0 bg-terminal-950 overflow-hidden">
+
+            <!-- Active Pair Info & Chart Toolbar -->
+            <div class="bg-terminal-900 border-b border-slate-800/80 px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <!-- Active Symbol & Live Quote -->
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <span id="activePairTitle" class="text-base sm:text-lg font-bold text-white tracking-tight font-mono">EUR/USD</span>
+                        <span id="activePairChange" class="text-xs font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">+0.24%</span>
+                    </div>
+                    <div class="hidden sm:flex items-center gap-4 text-xs font-mono border-l border-slate-800 pl-4">
+                        <div>
+                            <span class="text-slate-500 mr-1">H:</span>
+                            <span id="activePairHigh" class="text-slate-300">1.08850</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 mr-1">L:</span>
+                            <span id="activePairLow" class="text-slate-300">1.08120</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 mr-1">Spread:</span>
+                            <span id="activePairSpread" class="text-blue-400">1.2 pips</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeframes & Technical Indicators Controls -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Chart Type Toggle -->
+                    <div class="flex bg-terminal-950 p-0.5 rounded-lg border border-slate-800">
+                        <button id="chartTypeCandles" class="px-2.5 py-1 rounded-md text-xs font-medium bg-blue-600 text-white transition" title="Candlestick Chart">
+                            <i class="fa-solid fa-chart-column"></i>
+                        </button>
+                        <button id="chartTypeLine" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white transition" title="Area Line Chart">
+                            <i class="fa-solid fa-chart-area"></i>
+                        </button>
+                    </div>
+
+                    <!-- Timeframe Selector -->
+                    <div id="timeframeGroup" class="flex bg-terminal-950 p-0.5 rounded-lg border border-slate-800 text-xs font-mono">
+                        <button data-tf="1M" class="tf-btn px-2 py-1 rounded-md bg-slate-800 text-white font-semibold">1M</button>
+                        <button data-tf="5M" class="tf-btn px-2 py-1 rounded-md text-slate-400 hover:text-white">5M</button>
+                        <button data-tf="15M" class="tf-btn px-2 py-1 rounded-md text-slate-400 hover:text-white">15M</button>
+                        <button data-tf="1H" class="tf-btn px-2 py-1 rounded-md text-slate-400 hover:text-white">1H</button>
+                        <button data-tf="4H" class="tf-btn px-2 py-1 rounded-md text-slate-400 hover:text-white">4H</button>
+                        <button data-tf="1D" class="tf-btn px-2 py-1 rounded-md text-slate-400 hover:text-white">1D</button>
+                    </div>
+
+                    <!-- Technical Indicators Toggles -->
+                    <div class="flex items-center gap-1 bg-terminal-950 p-0.5 rounded-lg border border-slate-800 text-xs">
+                        <button id="indSMA" class="px-2 py-1 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 font-medium transition">SMA 20</button>
+                        <button id="indEMA" class="px-2 py-1 rounded-md text-slate-400 hover:text-white font-medium transition">EMA 50</button>
+                        <button id="indBB" class="px-2 py-1 rounded-md text-slate-400 hover:text-white font-medium transition">BB (20,2)</button>
+                    </div>
+
+                    <!-- Reset Zoom Button -->
+                    <button id="resetChartBtn" class="px-2.5 py-1 rounded-lg bg-terminal-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs transition" title="Reset Chart View">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Interactive HTML5 Canvas Container -->
+            <div class="relative flex-1 min-h-[300px] sm:min-h-[360px] w-full bg-terminal-950 overflow-hidden" id="chartWrapper">
+                <canvas id="priceChartCanvas"></canvas>
+
+                <!-- Floating OHLC + Indicator Legend Overlay -->
+                <div class="absolute top-3 left-3 pointer-events-none flex flex-col gap-1 bg-terminal-900/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-slate-800/80 text-xs font-mono">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span id="ohlcOpen" class="text-slate-300">O: <strong class="text-white">1.08420</strong></span>
+                        <span id="ohlcHigh" class="text-slate-300">H: <strong class="text-white">1.08460</strong></span>
+                        <span id="ohlcLow" class="text-slate-300">L: <strong class="text-white">1.08390</strong></span>
+                        <span id="ohlcClose" class="text-slate-300">C: <strong class="text-emerald-400">1.08450</strong></span>
+                    </div>
+                    <div id="indicatorLegend" class="flex items-center gap-3 text-[11px]">
+                        <span class="text-amber-400">● SMA(20)</span>
+                    </div>
+                </div>
+
+                <!-- Quick One-Click Chart Trading Floating Buttons -->
+                <div class="absolute top-3 right-20 hidden md:flex items-center gap-1 bg-terminal-900/90 backdrop-blur px-1.5 py-1 rounded-lg border border-slate-800 shadow-lg">
+                    <button id="quickSellBtn" class="px-2.5 py-1 rounded bg-rose-500/15 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/30 transition font-mono text-xs flex flex-col items-center leading-tight">
+                        <span class="text-[9px] uppercase font-sans font-semibold">Quick Sell</span>
+                        <span id="quickSellPrice" class="font-bold">1.08440</span>
+                    </button>
+                    <div class="px-1.5 text-[10px] font-mono text-slate-400">0.10</div>
+                    <button id="quickBuyBtn" class="px-2.5 py-1 rounded bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/30 transition font-mono text-xs flex flex-col items-center leading-tight">
+                        <span class="text-[9px] uppercase font-sans font-semibold">Quick Buy</span>
+                        <span id="quickBuyPrice" class="font-bold">1.08452</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- BOTTOM POSITIONS & ORDERS DRAWER -->
+            <div class="h-60 sm:h-64 bg-terminal-900 border-t border-slate-800/80 flex flex-col shrink-0">
+                <!-- Drawer Tabs Header -->
+                <div class="flex items-center justify-between px-3 border-b border-slate-800 bg-terminal-950/40">
+                    <div class="flex items-center space-x-1">
+                        <button data-tab="positions" class="drawer-tab px-3.5 py-2.5 text-xs font-semibold border-b-2 border-blue-500 text-white flex items-center gap-2 transition">
+                            <span>Open Positions</span>
+                            <span id="openPositionsBadge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-blue-500/20 text-blue-400">0</span>
+                        </button>
+                        <button data-tab="pending" class="drawer-tab px-3.5 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition">
+                            <span>Pending Orders</span>
+                            <span id="pendingOrdersBadge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-slate-800 text-slate-400">0</span>
+                        </button>
+                        <button data-tab="history" class="drawer-tab px-3.5 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition">
+                            <span>Trade History</span>
+                            <span id="historyBadge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-slate-800 text-slate-400">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Close All Positions Button -->
+                    <div class="flex items-center gap-2">
+                        <button id="closeAllPositionsBtn" class="hidden px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[11px] font-medium transition">
+                            Close All Positions
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Content 1: Open Positions -->
+                <div id="tab-positions" class="drawer-content flex-1 overflow-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800/80 text-[10px] uppercase tracking-wider text-slate-400 bg-terminal-950/30 sticky top-0">
+                                <th class="py-2 px-3">Ticket</th>
+                                <th class="py-2 px-3">Symbol</th>
+                                <th class="py-2 px-3">Side</th>
+                                <th class="py-2 px-3">Lots</th>
+                                <th class="py-2 px-3">Entry Price</th>
+                                <th class="py-2 px-3">Current</th>
+                                <th class="py-2 px-3">SL / TP</th>
+                                <th class="py-2 px-3 text-right">Floating P&L</th>
+                                <th class="py-2 px-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="openPositionsBody" class="divide-y divide-slate-800/50 text-xs font-mono">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tab Content 2: Pending Orders -->
+                <div id="tab-pending" class="drawer-content hidden flex-1 overflow-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800/80 text-[10px] uppercase tracking-wider text-slate-400 bg-terminal-950/30 sticky top-0">
+                                <th class="py-2 px-3">Order ID</th>
+                                <th class="py-2 px-3">Symbol</th>
+                                <th class="py-2 px-3">Type</th>
+                                <th class="py-2 px-3">Lots</th>
+                                <th class="py-2 px-3">Trigger Price</th>
+                                <th class="py-2 px-3">Current Market</th>
+                                <th class="py-2 px-3">SL / TP</th>
+                                <th class="py-2 px-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingOrdersBody" class="divide-y divide-slate-800/50 text-xs font-mono">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tab Content 3: Trade History -->
+                <div id="tab-history" class="drawer-content hidden flex-1 overflow-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800/80 text-[10px] uppercase tracking-wider text-slate-400 bg-terminal-950/30 sticky top-0">
+                                <th class="py-2 px-3">Ticket</th>
+                                <th class="py-2 px-3">Symbol</th>
+                                <th class="py-2 px-3">Side</th>
+                                <th class="py-2 px-3">Lots</th>
+                                <th class="py-2 px-3">Open Price</th>
+                                <th class="py-2 px-3">Close Price</th>
+                                <th class="py-2 px-3">Reason</th>
+                                <th class="py-2 px-3 text-right">Realized P&L</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tradeHistoryBody" class="divide-y divide-slate-800/50 text-xs font-mono">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. RIGHT PANEL: ORDER EXECUTION PANEL -->
+        <aside class="w-full lg:w-80 bg-terminal-900 border-t lg:border-t-0 lg:border-l border-slate-800/80 flex flex-col shrink-0">
+            <!-- Panel Header -->
+            <div class="p-3 border-b border-slate-800/80 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-emerald-400 text-xs"></i>
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">Order Execution</h2>
+                </div>
+                <span id="orderPanelSymbol" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-800 text-blue-400">EUR/USD</span>
+            </div>
+
+            <div class="p-3.5 flex-1 flex flex-col gap-3.5 overflow-y-auto">
+                <!-- Market vs Limit Execution Tabs -->
+                <div class="grid grid-cols-2 bg-terminal-950 p-1 rounded-lg border border-slate-800 text-xs font-semibold">
+                    <button id="execTypeMarket" class="py-1.5 rounded-md bg-slate-800 text-white shadow transition">Market Execution</button>
+                    <button id="execTypeLimit" class="py-1.5 rounded-md text-slate-400 hover:text-white transition">Limit / Pending</button>
+                </div>
+
+                <!-- Live Bid / Ask Big Execution Buttons -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <!-- SELL / SHORT BOX -->
+                    <button id="selectSellSideBtn" class="group relative p-3 rounded-xl border-2 border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 transition flex flex-col items-start text-left overflow-hidden">
+                        <div class="flex items-center justify-between w-full mb-1">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-400">Sell / Short</span>
+                            <i class="fa-solid fa-arrow-trend-down text-rose-400 text-xs"></i>
+                        </div>
+                        <div id="orderBidPrice" class="font-mono text-lg font-bold text-white tracking-tight">1.08440</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Bid Market</div>
+                    </button>
+
+                    <!-- BUY / LONG BOX -->
+                    <button id="selectBuySideBtn" class="group relative p-3 rounded-xl border-2 border-emerald-500 bg-emerald-500/15 hover:bg-emerald-500/25 transition flex flex-col items-start text-left overflow-hidden">
+                        <div class="flex items-center justify-between w-full mb-1">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Buy / Long</span>
+                            <i class="fa-solid fa-arrow-trend-up text-emerald-400 text-xs"></i>
+                        </div>
+                        <div id="orderAskPrice" class="font-mono text-lg font-bold text-white tracking-tight">1.08452</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Ask Market</div>
+                    </button>
+                </div>
+
+                <!-- Limit Entry Price (Hidden when Market Order is active) -->
+                <div id="limitPriceContainer" class="hidden flex-col gap-1.5">
+                    <div class="flex justify-between text-xs">
+                        <label class="text-slate-400 font-medium">Limit Entry Price</label>
+                        <button id="fillCurrentPriceBtn" class="text-[11px] text-blue-400 hover:underline">Set Current</button>
+                    </div>
+                    <div class="flex items-center bg-terminal-950 rounded-lg border border-slate-800 focus-within:border-blue-500">
+                        <input id="limitPriceInput" type="number" step="0.0001" class="w-full bg-transparent px-3 py-2 font-mono text-sm text-white focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Volume / Lot Size Selector -->
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex justify-between text-xs">
+                        <label class="text-slate-400 font-medium">Volume (Lots)</label>
+                        <span id="contractUnitsLabel" class="font-mono text-[11px] text-slate-400">100,000 Units</span>
+                    </div>
+                    <div class="flex items-center bg-terminal-950 rounded-lg border border-slate-800 p-1">
+                        <button id="lotMinusBtn" class="w-8 h-8 rounded bg-terminal-800 hover:bg-slate-700 text-slate-200 font-mono font-bold transition">-</button>
+                        <input id="lotSizeInput" type="number" step="0.01" min="0.01" max="100" value="1.00" class="w-full bg-transparent text-center font-mono text-sm font-bold text-white focus:outline-none">
+                        <button id="lotPlusBtn" class="w-8 h-8 rounded bg-terminal-800 hover:bg-slate-700 text-slate-200 font-mono font-bold transition">+</button>
+                    </div>
+                    <!-- Quick Lot Pills -->
+                    <div class="grid grid-cols-4 gap-1.5 mt-0.5">
+                        <button data-lot="0.01" class="lot-pill py-1 rounded bg-terminal-950 hover:bg-slate-800 border border-slate-800 text-[11px] font-mono text-slate-300 transition">0.01</button>
+                        <button data-lot="0.10" class="lot-pill py-1 rounded bg-terminal-950 hover:bg-slate-800 border border-slate-800 text-[11px] font-mono text-slate-300 transition">0.10</button>
+                        <button data-lot="0.50" class="lot-pill py-1 rounded bg-terminal-950 hover:bg-slate-800 border border-slate-800 text-[11px] font-mono text-slate-300 transition">0.50</button>
+                        <button data-lot="1.00" class="lot-pill py-1 rounded bg-terminal-800 border border-slate-700 text-[11px] font-mono text-white transition">1.00</button>
+                    </div>
+                </div>
+
+                <!-- Stop Loss & Take Profit Inputs -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <!-- Stop Loss -->
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[11px] text-rose-400 font-medium">Stop Loss (SL)</label>
+                            <button id="autoSLBtn" class="text-[10px] text-slate-400 hover:text-white font-mono">-25p</button>
+                        </div>
+                        <input id="slInput" type="number" step="0.0001" placeholder="Optional" class="w-full bg-terminal-950 px-2.5 py-2 rounded-lg border border-slate-800 focus:border-rose-500 font-mono text-xs text-white focus:outline-none">
+                    </div>
+
+                    <!-- Take Profit -->
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[11px] text-emerald-400 font-medium">Take Profit (TP)</label>
+                            <button id="autoTPBtn" class="text-[10px] text-slate-400 hover:text-white font-mono">+50p</button>
+                        </div>
+                        <input id="tpInput" type="number" step="0.0001" placeholder="Optional" class="w-full bg-terminal-950 px-2.5 py-2 rounded-lg border border-slate-800 focus:border-emerald-500 font-mono text-xs text-white focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Pre-Trade Margin & Pip Value Calculator Box -->
+                <div class="bg-terminal-950/90 rounded-xl p-3 border border-slate-800/90 space-y-1.5 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Required Margin:</span>
+                        <span id="calcMarginReq" class="font-mono font-semibold text-white">$1,084.52</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Pip Value (Est.):</span>
+                        <span id="calcPipValue" class="font-mono text-slate-300">$10.00 / pip</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Spread Cost:</span>
+                        <span id="calcSpreadCost" class="font-mono text-slate-300">$12.00</span>
+                    </div>
+                </div>
+
+                <!-- Primary Place Order CTA Button -->
+                <button id="submitOrderBtn" class="w-full py-3 px-4 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-600/20 transition flex items-center justify-center gap-2 mt-auto">
+                    <i class="fa-solid fa-check-circle"></i>
+                    <span id="submitOrderBtnText">PLACE BUY MARKET ORDER (1.00 LOT)</span>
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <!-- ================= TOAST NOTIFICATION CONTAINER ================= -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none"></div>
+
+    <!-- ================= FUND / RESET ACCOUNT MODAL ================= -->
+    <div id="fundModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-terminal-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h3 class="font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-building-columns text-emerald-400"></i>
+                    <span>Institutional Liquidity Treasury</span>
+                </h3>
+                <button id="closeFundModal" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="py-4 space-y-4 text-xs">
+                <p class="text-slate-400">Add virtual institutional funds or reset your demo trading balance back to default.</p>
+                <div class="grid grid-cols-3 gap-2 font-mono">
+                    <button data-fund="10000" class="fund-preset py-2.5 rounded-lg bg-terminal-800 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-500/40 text-white font-semibold transition">+$10,000</button>
+                    <button data-fund="50000" class="fund-preset py-2.5 rounded-lg bg-terminal-800 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-500/40 text-white font-semibold transition">+$50,000</button>
+                    <button data-fund="100000" class="fund-preset py-2.5 rounded-lg bg-terminal-800 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-500/40 text-white font-semibold transition">+$100,000</button>
+                </div>
+                <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+                    <span class="text-slate-400">Full Account Reset ($100k):</span>
+                    <button id="resetAccountBtn" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-semibold transition">
+                        Reset Terminal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= APPLICATION LOGIC ================= -->
+    <script>
+        /********************************************************************
+         * 1. FOREX MARKET CONFIGURATION & INITIAL STATE
+         ********************************************************************/
+        const FOREX_PAIRS = [
+            {
+                symbol: 'EUR/USD',
+                name: 'Euro / US Dollar',
+                bid: 1.08440,
+                ask: 1.08452,
+                open24h: 1.08180,
+                high24h: 1.08850,
+                low24h: 1.08120,
+                pipSize: 0.0001,
+                digits: 5,
+                baseSpreadPips: 1.2,
+                volatility: 0.00018,
+                sentimentBull: 58
+            },
+            {
+                symbol: 'GBP/USD',
+                name: 'British Pound / US Dollar',
+                bid: 1.26730,
+                ask: 1.26745,
+                open24h: 1.26410,
+                high24h: 1.27090,
+                low24h: 1.26200,
+                pipSize: 0.0001,
+                digits: 5,
+                baseSpreadPips: 1.5,
+                volatility: 0.00022,
+                sentimentBull: 62
+            },
+            {
+                symbol: 'USD/JPY',
+                name: 'US Dollar / Japanese Yen',
+                bid: 154.620,
+                ask: 154.634,
+                open24h: 155.100,
+                high24h: 155.350,
+                low24h: 154.210,
+                pipSize: 0.01,
+                digits: 3,
+                baseSpreadPips: 1.4,
+                volatility: 0.025,
+                sentimentBull: 44
+            },
+            {
+                symbol: 'AUD/USD',
+                name: 'Australian Dollar / US Dollar',
+                bid: 0.65840,
+                ask: 0.65854,
+                open24h: 0.65620,
+                high24h: 0.66040,
+                low24h: 0.65510,
+                pipSize: 0.0001,
+                digits: 5,
+                baseSpreadPips: 1.4,
+                volatility: 0.00016,
+                sentimentBull: 53
+            },
+            {
+                symbol: 'USD/CAD',
+                name: 'US Dollar / Canadian Dollar',
+                bid: 1.37420,
+                ask: 1.37436,
+                open24h: 1.37690,
+                high24h: 1.37880,
+                low24h: 1.37190,
+                pipSize: 0.0001,
+                digits: 5,
+                baseSpreadPips: 1.6,
+                volatility: 0.00019,
+                sentimentBull: 49
+            },
+            {
+                symbol: 'USD/CHF',
+                name: 'US Dollar / Swiss Franc',
+                bid: 0.88410,
+                ask: 0.88425,
+                open24h: 0.88250,
+                high24h: 0.88690,
+                low24h: 0.88100,
+                pipSize: 0.0001,
+                digits: 5,
+                baseSpreadPips: 1.5,
+                volatility: 0.00017,
+                sentimentBull: 51
+            },
+            {
+                symbol: 'EUR/GBP',
+                name: 'Euro / British Pound',
+                bid: 0.85560,
+                ask: 0.85573,
+                open24h: 0.85680,
+                high24h: 0.85790,
+                low24h: 0.85440,
+                pipSize: 0.0001,
+                digits: 5,
+                baseSpreadPips: 1.3,
+                volatility: 0.00014,
+                sentimentBull: 41
+            }
+        ];
+
+        const TIMEFRAME_MULTIPLIERS = {
+            '1M': 1,
+            '5M': 2.2,
+            '15M': 3.5,
+            '1H': 6,
+            '4H': 11,
+            '1D': 22
+        };
+
+        // Main Application State
+        const state = {
+            balance: 100000.00,
+            leverage: 100,
+            selectedSymbol: 'EUR/USD',
+            timeframe: '1M',
+            chartType: 'candles', // 'candles' or 'line'
+            indicators: {
+                sma: true,
+                ema: false,
+                bb: false
+            },
+            orderForm: {
+                execType: 'MARKET', // 'MARKET' or 'LIMIT'
+                side: 'BUY',        // 'BUY' or 'SELL'
+                lots: 1.00
+            },
+            candlesByPair: {},      // Stores historical + live candles per symbol/timeframe
+            openPositions: [],      // Active open trades
+            pendingOrders: [],      // Active limit orders waiting for price trigger
+            tradeHistory: [],       // Closed trades
+            nextTicketId: 100482,
+            chartView: {
+                visibleCandles: 75,
+                scrollOffset: 0,    // 0 means pinned to latest candle
+                crosshairX: null,
+                crosshairY: null,
+                hoveredCandle: null
+            }
+        };
+
+        /********************************************************************
+         * 2. HISTORICAL CANDLESTICK GENERATOR & TECHNICAL INDICATORS
+         ********************************************************************/
+        function generateCandleHistory(pair, tfKey, count = 160) {
+            const mult = TIMEFRAME_MULTIPLIERS[tfKey] || 1;
+            const vol = pair.volatility * mult;
+            const candles = [];
+            let currentClose = pair.bid;
+
+            // Work backwards from current live price so the last candle matches live quote
+            const tempReverse = [];
+            const nowSec = Math.floor(Date.now() / 1000);
+            const tfSeconds = tfKey === '1M' ? 60 : tfKey === '5M' ? 300 : tfKey === '15M' ? 900 : tfKey === '1H' ? 3600 : tfKey === '4H' ? 14400 : 86400;
+
+            for (let i = 0; i < count; i++) {
+                const delta = (Math.random() - 0.495) * vol * 2.2;
+                const open = currentClose - delta;
+                const high = Math.max(open, currentClose) + Math.random() * vol * 1.1;
+                const low = Math.min(open, currentClose) - Math.random() * vol * 1.1;
+
+                tempReverse.push({
+                    time: (nowSec - i * tfSeconds) * 1000,
+                    open: Number(open.toFixed(pair.digits)),
+                    high: Number(high.toFixed(pair.digits)),
+                    low: Number(low.toFixed(pair.digits)),
+                    close: Number(currentClose.toFixed(pair.digits))
+                });
+                currentClose = open;
+            }
+
+            candles.push(...tempReverse.reverse());
+            return candles;
+        }
+
+        function ensureCandleHistory(symbol, tfKey) {
+            if (!state.candlesByPair[symbol]) {
+                state.candlesByPair[symbol] = {};
+            }
+            if (!state.candlesByPair[symbol][tfKey]) {
+                const pair = getPair(symbol);
+                state.candlesByPair[symbol][tfKey] = generateCandleHistory(pair, tfKey, 160);
+            }
+            return state.candlesByPair[symbol][tfKey];
+        }
+
+        function getPair(symbol) {
+            return FOREX_PAIRS.find(p => p.symbol === symbol);
+        }
+
+        // Calculate Simple Moving Average (SMA)
+        function computeSMA(candles, period = 20) {
+            const result = new Array(candles.length).fill(null);
+            for (let i = period - 1; i < candles.length; i++) {
+                let sum = 0;
+                for (let j = 0; j < period; j++) {
+                    sum += candles[i - j].close;
+                }
+                result[i] = sum / period;
+            }
+            return result;
+        }
+
+        // Calculate Exponential Moving Average (EMA)
+        function computeEMA(candles, period = 50) {
+            const result = new Array(candles.length).fill(null);
+            if (candles.length < period) return result;
+            const k = 2 / (period + 1);
+            let sum = 0;
+            for (let i = 0; i < period; i++) sum += candles[i].close;
+            let prevEma = sum / period;
+            result[period - 1] = prevEma;
+            for (let i = period; i < candles.length; i++) {
+                prevEma = candles[i].close * k + prevEma * (1 - k);
+                result[i] = prevEma;
+            }
+            return result;
+        }
+
+        // Calculate Bollinger Bands (20, 2)
+        function computeBollingerBands(candles, period = 20, stdMult = 2) {
+            const upper = new Array(candles.length).fill(null);
+            const lower = new Array(candles.length).fill(null);
+            const middle = computeSMA(candles, period);
+
+            for (let i = period - 1; i < candles.length; i++) {
+                const mean = middle[i];
+                let sqDiffSum = 0;
+                for (let j = 0; j < period; j++) {
+                    const diff = candles[i - j].close - mean;
+                    sqDiffSum += diff * diff;
+                }
+                const stdDev = Math.sqrt(sqDiffSum / period);
+                upper[i] = mean + stdMult * stdDev;
+                lower[i] = mean - stdMult * stdDev;
+            }
+            return { upper, middle, lower };
+        }
+
+        /********************************************************************
+         * 3. FINANCIAL P&L & MARGIN CALCULATIONS
+         ********************************************************************/
+        // Returns approximate USD value per 1 standard lot (100,000 units) per pip
+        function getPipValuePerLotUSD(pair) {
+            if (pair.symbol.endsWith('/USD')) {
+                return 10.0; // EUR/USD, GBP/USD, AUD/USD
+            }
+            if (pair.symbol === 'USD/JPY') {
+                return (1000 / pair.bid); // ~ $6.47
+            }
+            if (pair.symbol.startsWith('USD/')) {
+                return (10 / pair.bid); // USD/CAD, USD/CHF
+            }
+            if (pair.symbol === 'EUR/GBP') {
+                const gbpUsd = getPair('GBP/USD').bid;
+                return 10 * gbpUsd; // ~ $12.67
+            }
+            return 10.0;
+        }
+
+        // Required margin in USD for given symbol & lot size
+        function calculateMarginRequired(pair, lots) {
+            const contractSize = 100000 * lots;
+            let usdNotional = contractSize;
+            if (pair.symbol.startsWith('EUR/')) {
+                usdNotional = contractSize * getPair('EUR/USD').ask;
+            } else if (pair.symbol.startsWith('GBP/')) {
+                usdNotional = contractSize * getPair('GBP/USD').ask;
+            } else if (pair.symbol.startsWith('AUD/')) {
+                usdNotional = contractSize * getPair('AUD/USD').ask;
+            }
+            return usdNotional / state.leverage;
+        }
+
+        // Calculate live Floating P&L in USD for an open position
+        function calculatePositionPnL(pos) {
+            const pair = getPair(pos.symbol);
+            const currentClosePrice = pos.side === 'BUY' ? pair.bid : pair.ask;
+            const priceDiff = pos.side === 'BUY'
+                ? (currentClosePrice - pos.entryPrice)
+                : (pos.entryPrice - currentClosePrice);
+            const pipsGained = priceDiff / pair.pipSize;
+            const pipValue = getPipValuePerLotUSD(pair);
+            return {
+                pnlUSD: pipsGained * pipValue * pos.lots,
+                pips: pipsGained,
+                currentPrice: currentClosePrice
+            };
+        }
+
+        /********************************************************************
+         * 4. WATCHLIST UI RENDERING & UPDATES
+         ********************************************************************/
+        const prevBids = {};
+
+        function renderWatchlist() {
+            const container = document.getElementById('watchlistContainer');
+            const filterText = document.getElementById('pairSearchInput').value.trim().toUpperCase();
+
+            container.innerHTML = '';
+
+            FOREX_PAIRS.filter(p => p.symbol.includes(filterText) || p.name.toUpperCase().includes(filterText))
+                .forEach(pair => {
+                    const isSelected = pair.symbol === state.selectedSymbol;
+                    const changePct = ((pair.bid - pair.open24h) / pair.open24h) * 100;
+                    const isPositive = changePct >= 0;
+                    const spreadPips = ((pair.ask - pair.bid) / pair.pipSize).toFixed(1);
+
+                    const row = document.createElement('div');
+                    row.id = `watch-row-${pair.symbol.replace('/', '')}`;
+                    row.className = `grid grid-cols-12 items-center px-3 py-2.5 cursor-pointer transition select-none ${
+                        isSelected ? 'bg-slate-800/90 border-l-2 border-blue-500' : 'hover:bg-terminal-800/60'
+                    }`;
+
+                    row.innerHTML = `
+                        <div class="col-span-5 flex flex-col">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-mono font-bold text-xs text-white">${pair.symbol}</span>
+                            </div>
+                            <span class="text-[10px] font-mono ${isPositive ? 'text-emerald-400' : 'text-rose-400'}">
+                                ${isPositive ? '+' : ''}${changePct.toFixed(2)}%
+                            </span>
+                        </div>
+                        <div id="watch-bid-${pair.symbol.replace('/', '')}" class="col-span-3 text-right font-mono text-xs font-medium text-slate-200 px-1 py-0.5 rounded">
+                            ${pair.bid.toFixed(pair.digits)}
+                        </div>
+                        <div id="watch-ask-${pair.symbol.replace('/', '')}" class="col-span-3 text-right font-mono text-xs font-medium text-slate-200 px-1 py-0.5 rounded">
+                            ${pair.ask.toFixed(pair.digits)}
+                        </div>
+                        <div id="watch-sprd-${pair.symbol.replace('/', '')}" class="col-span-1 text-right font-mono text-[11px] text-slate-400">
+                            ${spreadPips}
+                        </div>
+                    `;
+
+                    row.addEventListener('click', () => selectCurrencyPair(pair.symbol));
+                    container.appendChild(row);
+                });
+        }
+
+        function updateWatchlistCells(pair, direction) {
+            const key = pair.symbol.replace('/', '');
+            const bidEl = document.getElementById(`watch-bid-${key}`);
+            const askEl = document.getElementById(`watch-ask-${key}`);
+            const sprdEl = document.getElementById(`watch-sprd-${key}`);
+
+            if (bidEl && askEl && sprdEl) {
+                bidEl.textContent = pair.bid.toFixed(pair.digits);
+                askEl.textContent = pair.ask.toFixed(pair.digits);
+                sprdEl.textContent = ((pair.ask - pair.bid) / pair.pipSize).toFixed(1);
+
+                const flashClass = direction > 0 ? 'flash-up' : 'flash-down';
+                bidEl.classList.remove('flash-up', 'flash-down');
+                askEl.classList.remove('flash-up', 'flash-down');
+                void bidEl.offsetWidth; // trigger reflow
+                bidEl.classList.add(flashClass);
+                askEl.classList.add(flashClass);
+            }
+        }
+
+        function selectCurrencyPair(symbol) {
+            state.selectedSymbol = symbol;
+            state.chartView.scrollOffset = 0;
+            const pair = getPair(symbol);
+
+            ensureCandleHistory(symbol, state.timeframe);
+            renderWatchlist();
+            updateActivePairHeader();
+            updateOrderExecutionPanel();
+
+            // Pre-populate limit price input with current price
+            document.getElementById('limitPriceInput').value = pair.ask.toFixed(pair.digits);
+            document.getElementById('limitPriceInput').step = pair.pipSize;
+            document.getElementById('slInput').step = pair.pipSize;
+            document.getElementById('tpInput').step = pair.pipSize;
+            document.getElementById('slInput').value = '';
+            document.getElementById('tpInput').value = '';
+
+            // Update sentiment widget
+            document.getElementById('sentimentPairLabel').textContent = pair.symbol;
+            document.getElementById('sentimentBullBar').style.width = `${pair.sentimentBull}%`;
+            document.getElementById('sentimentBullText').textContent = `${pair.sentimentBull}% Long`;
+            document.getElementById('sentimentBearText').textContent = `${100 - pair.sentimentBull}% Short`;
+
+            drawChart();
+        }
+
+        function updateActivePairHeader() {
+            const pair = getPair(state.selectedSymbol);
+            const changePct = ((pair.bid - pair.open24h) / pair.open24h) * 100;
+            const isPositive = changePct >= 0;
+            const spreadPips = ((pair.ask - pair.bid) / pair.pipSize).toFixed(1);
+
+            document.getElementById('activePairTitle').textContent = pair.symbol;
+            const changeEl = document.getElementById('activePairChange');
+            changeEl.textContent = `${isPositive ? '+' : ''}${changePct.toFixed(2)}%`;
+            changeEl.className = `text-xs font-mono px-1.5 py-0.5 rounded ${
+                isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+            }`;
+
+            document.getElementById('activePairHigh').textContent = pair.high24h.toFixed(pair.digits);
+            document.getElementById('activePairLow').textContent = pair.low24h.toFixed(pair.digits);
+            document.getElementById('activePairSpread').textContent = `${spreadPips} pips`;
+
+            // Quick chart buttons
+            document.getElementById('quickSellPrice').textContent = pair.bid.toFixed(pair.digits);
+            document.getElementById('quickBuyPrice').textContent = pair.ask.toFixed(pair.digits);
+        }
+
+        /********************************************************************
+         * 5. HTML5 CANVAS INTERACTIVE FINANCIAL CHART ENGINE
+         ********************************************************************/
+        const canvas = document.getElementById('priceChartCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('chartWrapper');
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = wrapper.clientWidth * dpr;
+            canvas.height = wrapper.clientHeight * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            drawChart();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawChart() {
+            const width = canvas.width / (window.devicePixelRatio || 1);
+            const height = canvas.height / (window.devicePixelRatio || 1);
+            if (!width || !height) return;
+
+            const pair = getPair(state.selectedSymbol);
+            const allCandles = ensureCandleHistory(state.selectedSymbol, state.timeframe);
+
+            // Clear Canvas
+            ctx.fillStyle = '#070a12';
+            ctx.fillRect(0, 0, width, height);
+
+            const rightAxisWidth = 74;
+            const bottomAxisHeight = 24;
+            const chartW = width - rightAxisWidth;
+            const chartH = height - bottomAxisHeight;
+
+            // Determine visible slice of candles
+            const count = Math.min(state.chartView.visibleCandles, allCandles.length);
+            const endIdx = Math.max(count, allCandles.length - state.chartView.scrollOffset);
+            const startIdx = Math.max(0, endIdx - count);
+            const visible = allCandles.slice(startIdx, endIdx);
+
+            if (visible.length === 0) return;
+
+            // Compute Indicators on full dataset then slice
+            const sma20 = state.indicators.sma ? computeSMA(allCandles, 20) : null;
+            const ema50 = state.indicators.ema ? computeEMA(allCandles, 50) : null;
+            const bb = state.indicators.bb ? computeBollingerBands(allCandles, 20, 2) : null;
+
+            // Find Min/Max price in visible window (including active indicators & open position lines)
+            let minPrice = Infinity;
+            let maxPrice = -Infinity;
+
+            visible.forEach((c, idx) => {
+                const globalIdx = startIdx + idx;
+                if (c.low < minPrice) minPrice = c.low;
+                if (c.high > maxPrice) maxPrice = c.high;
+                if (bb && bb.lower[globalIdx] !== null) {
+                    if (bb.lower[globalIdx] < minPrice) minPrice = bb.lower[globalIdx];
+                    if (bb.upper[globalIdx] > maxPrice) maxPrice = bb.upper[globalIdx];
+                }
+            });
+
+            const padding = (maxPrice - minPrice) * 0.12 || pair.pipSize * 10;
+            minPrice -= padding;
+            maxPrice += padding;
+            const priceRange = maxPrice - minPrice;
+
+            const priceToY = (p) => chartH - ((p - minPrice) / priceRange) * chartH;
+            const yToPrice = (y) => minPrice + ((chartH - y) / chartH) * priceRange;
+
+            // 1. Draw Horizontal & Vertical Grid Lines
+            ctx.strokeStyle = '#111827';
+            ctx.lineWidth = 1;
+            const gridLevels = 6;
+            ctx.font = '11px "JetBrains Mono", monospace';
+            ctx.fillStyle = '#64748b';
+
+            for (let i = 0; i <= gridLevels; i++) {
+                const y = (chartH / gridLevels) * i;
+                const priceLabel = yToPrice(y).toFixed(pair.digits);
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(chartW, y);
+                ctx.stroke();
+
+                ctx.fillText(priceLabel, chartW + 8, y + 4);
+            }
+
+            const candleStep = chartW / visible.length;
+            const candleBodyWidth = Math.max(2, candleStep * 0.68);
+
+            // Vertical Time Grid
+            const timeStep = Math.max(1, Math.floor(visible.length / 6));
+            for (let i = 0; i < visible.length; i += timeStep) {
+                const x = i * candleStep + candleStep / 2;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, chartH);
+                ctx.stroke();
+
+                const date = new Date(visible[i].time);
+                const timeStr = date.toTimeString().slice(0, 5);
+                ctx.fillText(timeStr, x - 16, chartH + 16);
+            }
+
+            // 2. Draw Bollinger Bands Shaded Area if enabled
+            if (bb) {
+                ctx.save();
+                ctx.beginPath();
+                let started = false;
+                for (let i = 0; i < visible.length; i++) {
+                    const gIdx = startIdx + i;
+                    if (bb.upper[gIdx] !== null) {
+                        const x = i * candleStep + candleStep / 2;
+                        const y = priceToY(bb.upper[gIdx]);
+                        if (!started) { ctx.moveTo(x, y); started = true; }
+                        else ctx.lineTo(x, y);
+                    }
+                }
+                for (let i = visible.length - 1; i >= 0; i--) {
+                    const gIdx = startIdx + i;
+                    if (bb.lower[gIdx] !== null) {
+                        const x = i * candleStep + candleStep / 2;
+                        const y = priceToY(bb.lower[gIdx]);
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(139, 92, 246, 0.08)';
+                ctx.fill();
+
+                // Upper & Lower Band Lines
+                ['upper', 'lower'].forEach(bandKey => {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(167, 139, 250, 0.5)';
+                    ctx.lineWidth = 1;
+                    let s = false;
+                    for (let i = 0; i < visible.length; i++) {
+                        const val = bb[bandKey][startIdx + i];
+                        if (val !== null) {
+                            const x = i * candleStep + candleStep / 2;
+                            const y = priceToY(val);
+                            if (!s) { ctx.moveTo(x, y); s = true; }
+                            else ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+
+            // 3. Draw Candlesticks or Area Line
+            if (state.chartType === 'candles') {
+                visible.forEach((c, i) => {
+                    const xCenter = i * candleStep + candleStep / 2;
+                    const isBull = c.close >= c.open;
+                    const color = isBull ? '#10b981' : '#f43f5e';
+
+                    const highY = priceToY(c.high);
+                    const lowY = priceToY(c.low);
+                    const openY = priceToY(c.open);
+                    const closeY = priceToY(c.close);
+
+                    // Wick
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath();
+                    ctx.moveTo(xCenter, highY);
+                    ctx.lineTo(xCenter, lowY);
+                    ctx.stroke();
+
+                    // Body
+                    ctx.fillStyle = color;
+                    const bodyTop = Math.min(openY, closeY);
+                    const bodyHeight = Math.max(1.5, Math.abs(closeY - openY));
+                    ctx.fillRect(xCenter - candleBodyWidth / 2, bodyTop, candleBodyWidth, bodyHeight);
+                });
+            } else {
+                // Area Line Chart
+                ctx.save();
+                ctx.beginPath();
+                visible.forEach((c, i) => {
+                    const x = i * candleStep + candleStep / 2;
+                    const y = priceToY(c.close);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Gradient fill under line
+                ctx.lineTo((visible.length - 1) * candleStep + candleStep / 2, chartH);
+                ctx.lineTo(candleStep / 2, chartH);
+                ctx.closePath();
+                const grad = ctx.createLinearGradient(0, 0, 0, chartH);
+                grad.addColorStop(0, 'rgba(59, 130, 246, 0.28)');
+                grad.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 4. Draw SMA & EMA Overlays
+            if (sma20) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1.6;
+                let started = false;
+                visible.forEach((c, i) => {
+                    const val = sma20[startIdx + i];
+                    if (val !== null) {
+                        const x = i * candleStep + candleStep / 2;
+                        const y = priceToY(val);
+                        if (!started) { ctx.moveTo(x, y); started = true; }
+                        else ctx.lineTo(x, y);
+                    }
+                });
+                ctx.stroke();
+            }
+
+            if (ema50) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1.6;
+                let started = false;
+                visible.forEach((c, i) => {
+                    const val = ema50[startIdx + i];
+                    if (val !== null) {
+                        const x = i * candleStep + candleStep / 2;
+                        const y = priceToY(val);
+                        if (!started) { ctx.moveTo(x, y); started = true; }
+                        else ctx.lineTo(x, y);
+                    }
+                });
+                ctx.stroke();
+            }
+
+            // 5. Draw Open Position Entry Lines on Active Symbol
+            state.openPositions
+                .filter(pos => pos.symbol === state.selectedSymbol)
+                .forEach(pos => {
+                    const entryY = priceToY(pos.entryPrice);
+                    if (entryY >= 0 && entryY <= chartH) {
+                        ctx.save();
+                        ctx.setLineDash([4, 4]);
+                        ctx.strokeStyle = pos.side === 'BUY' ? '#10b981' : '#f43f5e';
+                        ctx.lineWidth = 1.2;
+                        ctx.beginPath();
+                        ctx.moveTo(0, entryY);
+                        ctx.lineTo(chartW, entryY);
+                        ctx.stroke();
+
+                        // Tag label on left
+                        ctx.fillStyle = pos.side === 'BUY' ? '#065f46' : '#881337';
+                        ctx.fillRect(8, entryY - 9, 105, 18);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = '10px "JetBrains Mono", monospace';
+                        ctx.fillText(`${pos.side} ${pos.lots.toFixed(2)} @ ${pos.entryPrice.toFixed(pair.digits)}`, 12, entryY + 3);
+                        ctx.restore();
+                    }
+                });
+
+            // 6. Draw Live Bid/Ask Price Horizontal Line + Axis Badge
+            const liveY = priceToY(pair.bid);
+            if (liveY >= 0 && liveY <= chartH) {
+                ctx.save();
+                ctx.setLineDash([2, 2]);
+                ctx.strokeStyle = '#3b82f6';
+                ctx.beginPath();
+                ctx.moveTo(0, liveY);
+                ctx.lineTo(chartW, liveY);
+                ctx.stroke();
+
+                // Price Tag on Right Axis
+                ctx.fillStyle = '#2563eb';
+                ctx.fillRect(chartW + 2, liveY - 10, rightAxisWidth - 4, 20);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 11px "JetBrains Mono", monospace';
+                ctx.fillText(pair.bid.toFixed(pair.digits), chartW + 8, liveY + 4);
+                ctx.restore();
+            }
+
+            // 7. Draw Interactive Crosshair & Update Top-Left OHLC Legend
+            let displayCandle = visible[visible.length - 1];
+
+            if (state.chartView.crosshairX !== null && state.chartView.crosshairX < chartW && state.chartView.crosshairY < chartH) {
+                const hoverIndex = Math.min(visible.length - 1, Math.max(0, Math.floor(state.chartView.crosshairX / candleStep)));
+                displayCandle = visible[hoverIndex];
+                const snapX = hoverIndex * candleStep + candleStep / 2;
+
+                ctx.save();
+                ctx.setLineDash([3, 3]);
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+                ctx.beginPath();
+                ctx.moveTo(snapX, 0);
+                ctx.lineTo(snapX, chartH);
+                ctx.moveTo(0, state.chartView.crosshairY);
+                ctx.lineTo(chartW, state.chartView.crosshairY);
+                ctx.stroke();
+
+                // Crosshair Y price badge
+                const cursorPrice = yToPrice(state.chartView.crosshairY).toFixed(pair.digits);
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(chartW + 2, state.chartView.crosshairY - 10, rightAxisWidth - 4, 20);
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = '11px "JetBrains Mono", monospace';
+                ctx.fillText(cursorPrice, chartW + 8, state.chartView.crosshairY + 4);
+                ctx.restore();
+            }
+
+            // Right & Bottom Axis Border Lines
+            ctx.strokeStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.moveTo(chartW, 0);
+            ctx.lineTo(chartW, height);
+            ctx.moveTo(0, chartH);
+            ctx.lineTo(width, chartH);
+            ctx.stroke();
+
+            // Update OHLC Overlay DOM
+            if (displayCandle) {
+                const isBull = displayCandle.close >= displayCandle.open;
+                document.getElementById('ohlcOpen').innerHTML = `O: <strong class="text-white">${displayCandle.open.toFixed(pair.digits)}</strong>`;
+                document.getElementById('ohlcHigh').innerHTML = `H: <strong class="text-white">${displayCandle.high.toFixed(pair.digits)}</strong>`;
+                document.getElementById('ohlcLow').innerHTML = `L: <strong class="text-white">${displayCandle.low.toFixed(pair.digits)}</strong>`;
+                document.getElementById('ohlcClose').innerHTML = `C: <strong class="${isBull ? 'text-emerald-400' : 'text-rose-400'}">${displayCandle.close.toFixed(pair.digits)}</strong>`;
+            }
+        }
+
+        // Chart Mouse & Wheel Zoom Interactions
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            state.chartView.crosshairX = e.clientX - rect.left;
+            state.chartView.crosshairY = e.clientY - rect.top;
+            drawChart();
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            state.chartView.crosshairX = null;
+            state.chartView.crosshairY = null;
+            drawChart();
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                state.chartView.visibleCandles = Math.max(25, state.chartView.visibleCandles - 8);
+            } else {
+                state.chartView.visibleCandles = Math.min(150, state.chartView.visibleCandles + 8);
+            }
+            drawChart();
+        }, { passive: false });
+
+        /********************************************************************
+         * 6. ORDER EXECUTION PANEL & VALIDATION
+         ********************************************************************/
+        function updateOrderExecutionPanel() {
+            const pair = getPair(state.selectedSymbol);
+            const lots = parseFloat(document.getElementById('lotSizeInput').value) || 0.01;
+
+            document.getElementById('orderPanelSymbol').textContent = pair.symbol;
+            document.getElementById('orderBidPrice').textContent = pair.bid.toFixed(pair.digits);
+            document.getElementById('orderAskPrice').textContent = pair.ask.toFixed(pair.digits);
+
+            // Units & Margin Calculation
+            const units = Math.round(lots * 100000);
+            document.getElementById('contractUnitsLabel').textContent = `${units.toLocaleString()} Units`;
+
+            const reqMargin = calculateMarginRequired(pair, lots);
+            const pipVal = getPipValuePerLotUSD(pair) * lots;
+            const spreadPips = (pair.ask - pair.bid) / pair.pipSize;
+            const spreadCost = spreadPips * pipVal;
+
+            document.getElementById('calcMarginReq').textContent = formatCurrency(reqMargin);
+            document.getElementById('calcPipValue').textContent = `${formatCurrency(pipVal)} / pip`;
+            document.getElementById('calcSpreadCost').textContent = formatCurrency(spreadCost);
+
+            // Style Buy vs Sell selection boxes & CTA button
+            const buyBox = document.getElementById('selectBuySideBtn');
+            const sellBox = document.getElementById('selectSellSideBtn');
+            const submitBtn = document.getElementById('submitOrderBtn');
+            const submitText = document.getElementById('submitOrderBtnText');
+
+            if (state.orderForm.side === 'BUY') {
+                buyBox.className = 'group relative p-3 rounded-xl border-2 border-emerald-500 bg-emerald-500/20 transition flex flex-col items-start text-left overflow-hidden shadow-lg shadow-emerald-500/10';
+                sellBox.className = 'group relative p-3 rounded-xl border border-slate-800 bg-terminal-950/60 hover:bg-rose-500/10 transition flex flex-col items-start text-left overflow-hidden opacity-75 hover:opacity-100';
+                submitBtn.className = 'w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-600/20 transition flex items-center justify-center gap-2 mt-auto';
+            } else {
+                sellBox.className = 'group relative p-3 rounded-xl border-2 border-rose-500 bg-rose-500/20 transition flex flex-col items-start text-left overflow-hidden shadow-lg shadow-rose-500/10';
+                buyBox.className = 'group relative p-3 rounded-xl border border-slate-800 bg-terminal-950/60 hover:bg-emerald-500/10 transition flex flex-col items-start text-left overflow-hidden opacity-75 hover:opacity-100';
+                submitBtn.className = 'w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 shadow-lg shadow-rose-600/20 transition flex items-center justify-center gap-2 mt-auto';
+            }
+
+            const execLabel = state.orderForm.execType === 'MARKET' ? 'MARKET' : 'LIMIT';
+            submitText.textContent = `PLACE ${state.orderForm.side} ${execLabel} (${lots.toFixed(2)} LOT)`;
+        }
+
+        function executeOrder(customSide = null, customLots = null, forceMarket = false) {
+            const pair = getPair(state.selectedSymbol);
+            const side = customSide || state.orderForm.side;
+            const execType = forceMarket ? 'MARKET' : state.orderForm.execType;
+            const lots = customLots || parseFloat(document.getElementById('lotSizeInput').value);
+
+            if (isNaN(lots) || lots <= 0 || lots > 100) {
+                showToast('Invalid lot volume. Choose between 0.01 and 100.00.', 'error');
+                return;
+            }
+
+            const requiredMargin = calculateMarginRequired(pair, lots);
+            const metrics = getAccountMetrics();
+
+            if (requiredMargin > metrics.freeMargin) {
+                showToast(`Insufficient Free Margin. Required: ${formatCurrency(requiredMargin)}`, 'error');
+                return;
+            }
+
+            const slVal = parseFloat(document.getElementById('slInput').value) || null;
+            const tpVal = parseFloat(document.getElementById('tpInput').value) || null;
+            const entryPrice = side === 'BUY' ? pair.ask : pair.bid;
+
+            // Validate SL/TP logic if provided on Market orders
+            if (execType === 'MARKET') {
+                if (side === 'BUY') {
+                    if (slVal && slVal >= entryPrice) {
+                        showToast('Buy Stop Loss must be below current Ask entry price.', 'error');
+                        return;
+                    }
+                    if (tpVal && tpVal <= entryPrice) {
+                        showToast('Buy Take Profit must be above current Ask entry price.', 'error');
+                        return;
+                    }
+                } else {
+                    if (slVal && slVal <= entryPrice) {
+                        showToast('Sell Stop Loss must be above current Bid entry price.', 'error');
+                        return;
+                    }
+                    if (tpVal && tpVal >= entryPrice) {
+                        showToast('Sell Take Profit must be below current Bid entry price.', 'error');
+                        return;
+                    }
+                }
+
+                // Create Open Position
+                const newPos = {
+                    ticket: state.nextTicketId++,
+                    symbol: pair.symbol,
+                    side,
+                    lots,
+                    entryPrice,
+                    sl: slVal,
+                    tp: tpVal,
+                    marginUsed: requiredMargin,
+                    openTime: new Date().toLocaleTimeString()
+                };
+
+                state.openPositions.unshift(newPos);
+                showToast(`${side} ${lots.toFixed(2)} ${pair.symbol} filled @ ${entryPrice.toFixed(pair.digits)}`, 'success');
+                renderPositionsAndOrders();
+                updateAccountSummaryUI();
+                drawChart();
+            } else {
+                // Pending Limit Order
+                const triggerPrice = parseFloat(document.getElementById('limitPriceInput').value);
+                if (isNaN(triggerPrice) || triggerPrice <= 0) {
+                    showToast('Please enter a valid Limit trigger price.', 'error');
+                    return;
+                }
+
+                const pendingOrder = {
+                    id: state.nextTicketId++,
+                    symbol: pair.symbol,
+                    side,
+                    lots,
+                    triggerPrice,
+                    sl: slVal,
+                    tp: tpVal,
+                    time: new Date().toLocaleTimeString()
+                };
+
+                state.pendingOrders.unshift(pendingOrder);
+                showToast(`Pending ${side} Limit placed for ${pair.symbol} @ ${triggerPrice.toFixed(pair.digits)}`, 'info');
+                renderPositionsAndOrders();
+            }
+        }
+
+        function closePosition(ticketId, reason = 'Manual') {
+            const idx = state.openPositions.findIndex(p => p.ticket === ticketId);
+            if (idx === -1) return;
+
+            const pos = state.openPositions[idx];
+            const pair = getPair(pos.symbol);
+            const { pnlUSD, currentPrice } = calculatePositionPnL(pos);
+
+            // Settle Realized P&L to Account Balance
+            state.balance += pnlUSD;
+
+            // Move to Trade History
+            state.tradeHistory.unshift({
+                ticket: pos.ticket,
+                symbol: pos.symbol,
+                side: pos.side,
+                lots: pos.lots,
+                openPrice: pos.entryPrice,
+                closePrice: currentPrice,
+                reason,
+                pnl: pnlUSD,
+                digits: pair.digits
+            });
+
+            state.openPositions.splice(idx, 1);
+
+            const pnlFormatted = `${pnlUSD >= 0 ? '+' : ''}${formatCurrency(pnlUSD)}`;
+            showToast(`Closed #${pos.ticket} (${pos.symbol}) | P&L: ${pnlFormatted}`, pnlUSD >= 0 ? 'success' : 'info');
+
+            renderPositionsAndOrders();
+            updateAccountSummaryUI();
+            drawChart();
+        }
+
+        function cancelPendingOrder(orderId) {
+            const idx = state.pendingOrders.findIndex(o => o.id === orderId);
+            if (idx !== -1) {
+                const ord = state.pendingOrders[idx];
+                state.pendingOrders.splice(idx, 1);
+                showToast(`Pending order #${ord.id} (${ord.symbol}) cancelled.`, 'info');
+                renderPositionsAndOrders();
+            }
+        }
+
+        /********************************************************************
+         * 7. ACCOUNT SUMMARY & BOTTOM DRAWER TABLES
+         ********************************************************************/
+        function getAccountMetrics() {
+            let floatingPnL = 0;
+            let usedMargin = 0;
+
+            state.openPositions.forEach(pos => {
+                const { pnlUSD } = calculatePositionPnL(pos);
+                floatingPnL += pnlUSD;
+                usedMargin += pos.marginUsed;
+            });
+
+            const equity = state.balance + floatingPnL;
+            const freeMargin = equity - usedMargin;
+            const marginLevel = usedMargin > 0 ? (equity / usedMargin) * 100 : 0;
+
+            return {
+                balance: state.balance,
+                equity,
+                floatingPnL,
+                usedMargin,
+                freeMargin,
+                marginLevel
+            };
+        }
+
+        function updateAccountSummaryUI() {
+            const m = getAccountMetrics();
+
+            document.getElementById('accBalance').textContent = formatCurrency(m.balance);
+            document.getElementById('accEquity').textContent = formatCurrency(m.equity);
+            document.getElementById('accUsedMargin').textContent = formatCurrency(m.usedMargin);
+            document.getElementById('accFreeMargin').textContent = formatCurrency(m.freeMargin);
+
+            const pnlEl = document.getElementById('accPnL');
+            pnlEl.textContent = `${m.floatingPnL >= 0 ? '+' : ''}${formatCurrency(m.floatingPnL)}`;
+            pnlEl.className = `font-mono text-xs sm:text-sm font-semibold ${
+                m.floatingPnL > 0 ? 'text-emerald-400' : m.floatingPnL < 0 ? 'text-rose-400' : 'text-slate-400'
+            }`;
+
+            const levelEl = document.getElementById('accMarginLevel');
+            levelEl.textContent = m.usedMargin > 0 ? `${m.marginLevel.toFixed(1)}%` : '0.00%';
+            levelEl.className = `font-mono text-xs sm:text-sm font-semibold ${
+                m.usedMargin === 0 || m.marginLevel > 150 ? 'text-emerald-400' : m.marginLevel > 100 ? 'text-amber-400' : 'text-rose-400'
+            }`;
+        }
+
+        function renderPositionsAndOrders() {
+            // Update Badges
+            document.getElementById('openPositionsBadge').textContent = state.openPositions.length;
+            document.getElementById('pendingOrdersBadge').textContent = state.pendingOrders.length;
+            document.getElementById('historyBadge').textContent = state.tradeHistory.length;
+
+            const closeAllBtn = document.getElementById('closeAllPositionsBtn');
+            if (state.openPositions.length > 0) {
+                closeAllBtn.classList.remove('hidden');
+            } else {
+                closeAllBtn.classList.add('hidden');
+            }
+
+            // 1. Render Open Positions Table
+            const openBody = document.getElementById('openPositionsBody');
+            if (state.openPositions.length === 0) {
+                openBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="py-8 text-center text-slate-500 font-sans text-xs">
+                            No open positions. Use the Order Execution panel on the right to enter the market.
+                        </td>
+                    </tr>`;
+            } else {
+                openBody.innerHTML = state.openPositions.map(pos => {
+                    const pair = getPair(pos.symbol);
+                    const { pnlUSD, pips, currentPrice } = calculatePositionPnL(pos);
+                    const isProfit = pnlUSD >= 0;
+                    const slText = pos.sl ? pos.sl.toFixed(pair.digits) : '—';
+                    const tpText = pos.tp ? pos.tp.toFixed(pair.digits) : '—';
+
+                    return `
+                        <tr class="hover:bg-terminal-800/50 transition">
+                            <td class="py-2.5 px-3 text-slate-400">#${pos.ticket}</td>
+                            <td class="py-2.5 px-3 font-bold text-white cursor-pointer hover:text-blue-400" onclick="selectCurrencyPair('${pos.symbol}')">${pos.symbol}</td>
+                            <td class="py-2.5 px-3">
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    pos.side === 'BUY' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                                }">${pos.side}</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-white">${pos.lots.toFixed(2)}</td>
+                            <td class="py-2.5 px-3 text-slate-300">${pos.entryPrice.toFixed(pair.digits)}</td>
+                            <td class="py-2.5 px-3 text-white font-semibold" id="pos-cur-${pos.ticket}">${currentPrice.toFixed(pair.digits)}</td>
+                            <td class="py-2.5 px-3 text-slate-400 text-[11px]">
+                                <span class="text-rose-400/80">${slText}</span> / <span class="text-emerald-400/80">${tpText}</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-bold ${isProfit ? 'text-emerald-400' : 'text-rose-400'}" id="pos-pnl-${pos.ticket}">
+                                ${isProfit ? '+' : ''}${formatCurrency(pnlUSD)}
+                                <span class="text-[10px] font-normal opacity-80">(${isProfit ? '+' : ''}${pips.toFixed(1)}p)</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-right">
+                                <button onclick="closePosition(${pos.ticket}, 'Manual')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-rose-500/20 text-slate-200 hover:text-rose-400 border border-slate-700 hover:border-rose-500/40 text-[11px] font-sans font-medium transition">
+                                    Close
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // 2. Render Pending Orders Table
+            const pendingBody = document.getElementById('pendingOrdersBody');
+            if (state.pendingOrders.length === 0) {
+                pendingBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="py-8 text-center text-slate-500 font-sans text-xs">
+                            No active pending limit orders.
+                        </td>
+                    </tr>`;
+            } else {
+                pendingBody.innerHTML = state.pendingOrders.map(ord => {
+                    const pair = getPair(ord.symbol);
+                    const curMarket = ord.side === 'BUY' ? pair.ask : pair.bid;
+                    const slText = ord.sl ? ord.sl.toFixed(pair.digits) : '—';
+                    const tpText = ord.tp ? ord.tp.toFixed(pair.digits) : '—';
+
+                    return `
+                        <tr class="hover:bg-terminal-800/50 transition">
+                            <td class="py-2.5 px-3 text-slate-400">#${ord.id}</td>
+                            <td class="py-2.5 px-3 font-bold text-white">${ord.symbol}</td>
+                            <td class="py-2.5 px-3">
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">${ord.side} LIMIT</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-white">${ord.lots.toFixed(2)}</td>
+                            <td class="py-2.5 px-3 text-amber-400 font-semibold">${ord.triggerPrice.toFixed(pair.digits)}</td>
+                            <td class="py-2.5 px-3 text-slate-300">${curMarket.toFixed(pair.digits)}</td>
+                            <td class="py-2.5 px-3 text-slate-400 text-[11px]">${slText} / ${tpText}</td>
+                            <td class="py-2.5 px-3 text-right">
+                                <button onclick="cancelPendingOrder(${ord.id})" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 text-[11px] font-sans transition">
+                                    Cancel
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // 3. Render Trade History Table
+            const historyBody = document.getElementById('tradeHistoryBody');
+            if (state.tradeHistory.length === 0) {
+                historyBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="py-8 text-center text-slate-500 font-sans text-xs">
+                            No closed trades in this session yet.
+                        </td>
+                    </tr>`;
+            } else {
+                historyBody.innerHTML = state.tradeHistory.map(h => {
+                    const isProfit = h.pnl >= 0;
+                    return `
+                        <tr class="hover:bg-terminal-800/50 transition">
+                            <td class="py-2.5 px-3 text-slate-400">#${h.ticket}</td>
+                            <td class="py-2.5 px-3 font-bold text-white">${h.symbol}</td>
+                            <td class="py-2.5 px-3">
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    h.side === 'BUY' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+                                }">${h.side}</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-white">${h.lots.toFixed(2)}</td>
+                            <td class="py-2.5 px-3 text-slate-300">${h.openPrice.toFixed(h.digits)}</td>
+                            <td class="py-2.5 px-3 text-slate-200">${h.closePrice.toFixed(h.digits)}</td>
+                            <td class="py-2.5 px-3 text-slate-400 text-[11px]">${h.reason}</td>
+                            <td class="py-2.5 px-3 text-right font-bold ${isProfit ? 'text-emerald-400' : 'text-rose-400'}">
+                                ${isProfit ? '+' : ''}${formatCurrency(h.pnl)}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Fast DOM update for live floating P&L cells without rebuilding full table
+        function updateLivePositionCells() {
+            state.openPositions.forEach(pos => {
+                const pair = getPair(pos.symbol);
+                const { pnlUSD, pips, currentPrice } = calculatePositionPnL(pos);
+                const isProfit = pnlUSD >= 0;
+
+                const curEl = document.getElementById(`pos-cur-${pos.ticket}`);
+                const pnlEl = document.getElementById(`pos-pnl-${pos.ticket}`);
+
+                if (curEl && pnlEl) {
+                    curEl.textContent = currentPrice.toFixed(pair.digits);
+                    pnlEl.className = `py-2.5 px-3 text-right font-bold ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`;
+                    pnlEl.innerHTML = `${isProfit ? '+' : ''}${formatCurrency(pnlUSD)} <span class="text-[10px] font-normal opacity-80">(${isProfit ? '+' : ''}${pips.toFixed(1)}p)</span>`;
+                }
+            });
+        }
+
+        /********************************************************************
+         * 8. REAL-TIME MARKET TICK ENGINE & AUTOMATED SL/TP/LIMIT TRIGGERS
+         ********************************************************************/
+        function simulateMarketTick() {
+            FOREX_PAIRS.forEach(pair => {
+                // Random walk with slight mean-reversion tendency
+                const delta = (Math.random() - 0.498) * pair.volatility * 0.85;
+                const oldBid = pair.bid;
+                let newBid = Number((pair.bid + delta).toFixed(pair.digits));
+
+                // Dynamic micro-spread fluctuation
+                const spreadJitter = (Math.random() - 0.5) * 0.3;
+                const currentSpreadPips = Math.max(0.6, pair.baseSpreadPips + spreadJitter);
+                let newAsk = Number((newBid + currentSpreadPips * pair.pipSize).toFixed(pair.digits));
+
+                pair.bid = newBid;
+                pair.ask = newAsk;
+
+                if (newBid > pair.high24h) pair.high24h = newBid;
+                if (newBid < pair.low24h) pair.low24h = newBid;
+
+                const direction = newBid >= oldBid ? 1 : -1;
+                updateWatchlistCells(pair, direction);
+
+                // Update active candle for this pair across initialized timeframes
+                if (state.candlesByPair[pair.symbol]) {
+                    Object.keys(state.candlesByPair[pair.symbol]).forEach(tfKey => {
+                        const candles = state.candlesByPair[pair.symbol][tfKey];
+                        if (candles && candles.length > 0) {
+                            const last = candles[candles.length - 1];
+                            last.close = newBid;
+                            if (newBid > last.high) last.high = newBid;
+                            if (newBid < last.low) last.low = newBid;
+
+                            // Occasionally roll over a new candle
+                            if (Math.random() < 0.03) {
+                                candles.push({
+                                    time: Date.now(),
+                                    open: newBid,
+                                    high: newBid,
+                                    low: newBid,
+                                    close: newBid
+                                });
+                                if (candles.length > 220) candles.shift();
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Check Automated Stop-Loss (SL) & Take-Profit (TP) Triggers
+            for (let i = state.openPositions.length - 1; i >= 0; i--) {
+                const pos = state.openPositions[i];
+                const pair = getPair(pos.symbol);
+                const markPrice = pos.side === 'BUY' ? pair.bid : pair.ask;
+
+                if (pos.side === 'BUY') {
+                    if (pos.sl && markPrice <= pos.sl) {
+                        closePosition(pos.ticket, 'Stop Loss');
+                        continue;
+                    }
+                    if (pos.tp && markPrice >= pos.tp) {
+                        closePosition(pos.ticket, 'Take Profit');
+                        continue;
+                    }
+                } else {
+                    if (pos.sl && markPrice >= pos.sl) {
+                        closePosition(pos.ticket, 'Stop Loss');
+                        continue;
+                    }
+                    if (pos.tp && markPrice <= pos.tp) {
+                        closePosition(pos.ticket, 'Take Profit');
+                        continue;
+                    }
+                }
+            }
+
+            // Check Pending Limit Order Triggers
+            for (let i = state.pendingOrders.length - 1; i >= 0; i--) {
+                const ord = state.pendingOrders[i];
+                const pair = getPair(ord.symbol);
+
+                const shouldTrigger = (ord.side === 'BUY' && pair.ask <= ord.triggerPrice) ||
+                                      (ord.side === 'SELL' && pair.bid >= ord.triggerPrice);
+
+                if (shouldTrigger) {
+                    const reqMargin = calculateMarginRequired(pair, ord.lots);
+                    const metrics = getAccountMetrics();
+                    if (reqMargin <= metrics.freeMargin) {
+                        state.openPositions.unshift({
+                            ticket: ord.id,
+                            symbol: ord.symbol,
+                            side: ord.side,
+                            lots: ord.lots,
+                            entryPrice: ord.triggerPrice,
+                            sl: ord.sl,
+                            tp: ord.tp,
+                            marginUsed: reqMargin,
+                            openTime: new Date().toLocaleTimeString()
+                        });
+                        state.pendingOrders.splice(i, 1);
+                        showToast(`Limit Order #${ord.id} triggered: ${ord.side} ${ord.lots} ${ord.symbol}`, 'success');
+                        renderPositionsAndOrders();
+                    }
+                }
+            }
+
+            updateActivePairHeader();
+            updateOrderExecutionPanel();
+            updateAccountSummaryUI();
+            updateLivePositionCells();
+            drawChart();
+        }
+
+        /********************************************************************
+         * 9. UTILITY FUNCTIONS & EVENT LISTENERS
+         ********************************************************************/
+        function formatCurrency(val) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(val);
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            const styles = {
+                success: 'bg-terminal-900 border-emerald-500/60 text-emerald-400',
+                error: 'bg-terminal-900 border-rose-500/60 text-rose-400',
+                info: 'bg-terminal-900 border-blue-500/60 text-blue-400'
+            };
+            const icons = {
+                success: 'fa-circle-check',
+                error: 'fa-triangle-exclamation',
+                info: 'fa-circle-info'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border shadow-xl text-xs font-medium transition-all duration-300 ${styles[type]}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icons[type]} text-sm shrink-0"></i>
+                <span class="text-slate-100">${message}</span>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3400);
+        }
+
+        function bindEventListeners() {
+            // Search filter
+            document.getElementById('pairSearchInput').addEventListener('input', renderWatchlist);
+
+            // Leverage change
+            document.getElementById('leverageSelect').addEventListener('change', (e) => {
+                state.leverage = parseInt(e.target.value, 10);
+                updateOrderExecutionPanel();
+                updateAccountSummaryUI();
+                showToast(`Account leverage updated to 1:${state.leverage}`, 'info');
+            });
+
+            // Timeframe buttons
+            document.querySelectorAll('.tf-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tf-btn').forEach(b => {
+                        b.className = 'tf-btn px-2 py-1 rounded-md text-slate-400 hover:text-white';
+                    });
+                    btn.className = 'tf-btn px-2 py-1 rounded-md bg-slate-800 text-white font-semibold';
+                    state.timeframe = btn.dataset.tf;
+                    ensureCandleHistory(state.selectedSymbol, state.timeframe);
+                    drawChart();
+                });
+            });
+
+            // Chart Type Toggle (Candles vs Line)
+            const btnCandles = document.getElementById('chartTypeCandles');
+            const btnLine = document.getElementById('chartTypeLine');
+            btnCandles.addEventListener('click', () => {
+                state.chartType = 'candles';
+                btnCandles.className = 'px-2.5 py-1 rounded-md text-xs font-medium bg-blue-600 text-white transition';
+                btnLine.className = 'px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white transition';
+                drawChart();
+            });
+            btnLine.addEventListener('click', () => {
+                state.chartType = 'line';
+                btnLine.className = 'px-2.5 py-1 rounded-md text-xs font-medium bg-blue-600 text-white transition';
+                btnCandles.className = 'px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white transition';
+                drawChart();
+            });
+
+            // Indicator Toggles
+            const updateIndicatorLegend = () => {
+                const legend = document.getElementById('indicatorLegend');
+                const items = [];
+                if (state.indicators.sma) items.push('<span class="text-amber-400">● SMA(20)</span>');
+                if (state.indicators.ema) items.push('<span class="text-sky-400">● EMA(50)</span>');
+                if (state.indicators.bb) items.push('<span class="text-violet-400">● BB(20,2)</span>');
+                legend.innerHTML = items.join('');
+            };
+
+            document.getElementById('indSMA').addEventListener('click', function() {
+                state.indicators.sma = !state.indicators.sma;
+                this.className = state.indicators.sma
+                    ? 'px-2 py-1 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 font-medium transition'
+                    : 'px-2 py-1 rounded-md text-slate-400 hover:text-white font-medium transition';
+                updateIndicatorLegend();
+                drawChart();
+            });
+
+            document.getElementById('indEMA').addEventListener('click', function() {
+                state.indicators.ema = !state.indicators.ema;
+                this.className = state.indicators.ema
+                    ? 'px-2 py-1 rounded-md bg-sky-500/20 text-sky-400 border border-sky-500/30 font-medium transition'
+                    : 'px-2 py-1 rounded-md text-slate-400 hover:text-white font-medium transition';
+                updateIndicatorLegend();
+                drawChart();
+            });
+
+            document.getElementById('indBB').addEventListener('click', function() {
+                state.indicators.bb = !state.indicators.bb;
+                this.className = state.indicators.bb
+                    ? 'px-2 py-1 rounded-md bg-violet-500/20 text-violet-400 border border-violet-500/30 font-medium transition'
+                    : 'px-2 py-1 rounded-md text-slate-400 hover:text-white font-medium transition';
+                updateIndicatorLegend();
+                drawChart();
+            });
+
+            document.getElementById('resetChartBtn').addEventListener('click', () => {
+                state.chartView.visibleCandles = 75;
+                state.chartView.scrollOffset = 0;
+                drawChart();
+            });
+
+            // Quick One-Click Chart Buy/Sell Buttons
+            document.getElementById('quickBuyBtn').addEventListener('click', () => executeOrder('BUY', 0.10, true));
+            document.getElementById('quickSellBtn').addEventListener('click', () => executeOrder('SELL', 0.10, true));
+
+            // Order Execution Panel: Market vs Limit Tabs
+            const btnMarket = document.getElementById('execTypeMarket');
+            const btnLimit = document.getElementById('execTypeLimit');
+            const limitContainer = document.getElementById('limitPriceContainer');
+
+            btnMarket.addEventListener('click', () => {
+                state.orderForm.execType = 'MARKET';
+                btnMarket.className = 'py-1.5 rounded-md bg-slate-800 text-white shadow transition';
+                btnLimit.className = 'py-1.5 rounded-md text-slate-400 hover:text-white transition';
+                limitContainer.classList.add('hidden');
+                limitContainer.classList.remove('flex');
+                updateOrderExecutionPanel();
+            });
+
+            btnLimit.addEventListener('click', () => {
+                state.orderForm.execType = 'LIMIT';
+                btnLimit.className = 'py-1.5 rounded-md bg-slate-800 text-white shadow transition';
+                btnMarket.className = 'py-1.5 rounded-md text-slate-400 hover:text-white transition';
+                limitContainer.classList.remove('hidden');
+                limitContainer.classList.add('flex');
+                const pair = getPair(state.selectedSymbol);
+                document.getElementById('limitPriceInput').value = pair.bid.toFixed(pair.digits);
+                updateOrderExecutionPanel();
+            });
+
+            document.getElementById('fillCurrentPriceBtn').addEventListener('click', () => {
+                const pair = getPair(state.selectedSymbol);
+                document.getElementById('limitPriceInput').value = pair.bid.toFixed(pair.digits);
+            });
+
+            // Select Buy vs Sell Side
+            document.getElementById('selectBuySideBtn').addEventListener('click', () => {
+                state.orderForm.side = 'BUY';
+                updateOrderExecutionPanel();
+            });
+            document.getElementById('selectSellSideBtn').addEventListener('click', () => {
+                state.orderForm.side = 'SELL';
+                updateOrderExecutionPanel();
+            });
+
+            // Lot Size Controls
+            const lotInput = document.getElementById('lotSizeInput');
+            document.getElementById('lotMinusBtn').addEventListener('click', () => {
+                const cur = parseFloat(lotInput.value) || 0.10;
+                lotInput.value = Math.max(0.01, cur - 0.10).toFixed(2);
+                updateOrderExecutionPanel();
+            });
+            document.getElementById('lotPlusBtn').addEventListener('click', () => {
+                const cur = parseFloat(lotInput.value) || 0.10;
+                lotInput.value = Math.min(100, cur + 0.10).toFixed(2);
+                updateOrderExecutionPanel();
+            });
+            lotInput.addEventListener('input', updateOrderExecutionPanel);
+
+            document.querySelectorAll('.lot-pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    lotInput.value = parseFloat(pill.dataset.lot).toFixed(2);
+                    updateOrderExecutionPanel();
+                });
+            });
+
+            // Auto -25p SL and +50p TP Helper Buttons
+            document.getElementById('autoSLBtn').addEventListener('click', () => {
+                const pair = getPair(state.selectedSymbol);
+                const base = state.orderForm.side === 'BUY' ? pair.ask : pair.bid;
+                const sl = state.orderForm.side === 'BUY'
+                    ? base - 25 * pair.pipSize
+                    : base + 25 * pair.pipSize;
+                document.getElementById('slInput').value = sl.toFixed(pair.digits);
+            });
+
+            document.getElementById('autoTPBtn').addEventListener('click', () => {
+                const pair = getPair(state.selectedSymbol);
+                const base = state.orderForm.side === 'BUY' ? pair.ask : pair.bid;
+                const tp = state.orderForm.side === 'BUY'
+                    ? base + 50 * pair.pipSize
+                    : base - 50 * pair.pipSize;
+                document.getElementById('tpInput').value = tp.toFixed(pair.digits);
+            });
+
+            // Submit Order Button
+            document.getElementById('submitOrderBtn').addEventListener('click', () => executeOrder());
+
+            // Bottom Drawer Tab Switching
+            document.querySelectorAll('.drawer-tab').forEach(tabBtn => {
+                tabBtn.addEventListener('click', () => {
+                    const target = tabBtn.dataset.tab;
+                    document.querySelectorAll('.drawer-tab').forEach(b => {
+                        b.className = 'drawer-tab px-3.5 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition';
+                    });
+                    tabBtn.className = 'drawer-tab px-3.5 py-2.5 text-xs font-semibold border-b-2 border-blue-500 text-white flex items-center gap-2 transition';
+
+                    document.querySelectorAll('.drawer-content').forEach(content => content.classList.add('hidden'));
+                    document.getElementById(`tab-${target}`).classList.remove('hidden');
+                });
+            });
+
+            // Close All Positions
+            document.getElementById('closeAllPositionsBtn').addEventListener('click', () => {
+                const tickets = state.openPositions.map(p => p.ticket);
+                tickets.forEach(t => closePosition(t, 'Close All'));
+            });
+
+            // Fund / Reset Modal
+            const fundModal = document.getElementById('fundModal');
+            document.getElementById('depositModalBtn').addEventListener('click', () => {
+                fundModal.classList.remove('hidden');
+                fundModal.classList.add('flex');
+            });
+            document.getElementById('closeFundModal').addEventListener('click', () => {
+                fundModal.classList.add('hidden');
+                fundModal.classList.remove('flex');
+            });
+            document.querySelectorAll('.fund-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const amt = parseFloat(btn.dataset.fund);
+                    state.balance += amt;
+                    updateAccountSummaryUI();
+                    showToast(`Deposited ${formatCurrency(amt)} institutional liquidity.`, 'success');
+                    fundModal.classList.add('hidden');
+                    fundModal.classList.remove('flex');
+                });
+            });
+            document.getElementById('resetAccountBtn').addEventListener('click', () => {
+                state.balance = 100000.00;
+                state.openPositions = [];
+                state.pendingOrders = [];
+                state.tradeHistory = [];
+                renderPositionsAndOrders();
+                updateAccountSummaryUI();
+                drawChart();
+                showToast('Trading terminal reset to $100,000.00 default state.', 'info');
+                fundModal.classList.add('hidden');
+                fundModal.classList.remove('flex');
+            });
+        }
+
+        // Live UTC Server Clock
+        function updateClock() {
+            const now = new Date();
+            const utcStr = now.toISOString().slice(11, 19) + ' UTC';
+            document.getElementById('utcClock').textContent = utcStr;
+        }
+
+        // Seed 2 Initial Sample Open Positions so the user immediately sees live P&L action
+        function seedSamplePositions() {
+            const eurUsd = getPair('EUR/USD');
+            const gbpUsd = getPair('GBP/USD');
+
+            state.openPositions.push({
+                ticket: state.nextTicketId++,
+                symbol: 'EUR/USD',
+                side: 'BUY',
+                lots: 0.50,
+                entryPrice: Number((eurUsd.ask - 0.00045).toFixed(5)),
+                sl: Number((eurUsd.ask - 0.00250).toFixed(5)),
+                tp: Number((eurUsd.ask + 0.00400).toFixed(5)),
+                marginUsed: calculateMarginRequired(eurUsd, 0.50),
+                openTime: new Date().toLocaleTimeString()
+            });
+
+            state.openPositions.push({
+                ticket: state.nextTicketId++,
+                symbol: 'GBP/USD',
+                side: 'SELL',
+                lots: 0.25,
+                entryPrice: Number((gbpUsd.bid + 0.00030).toFixed(5)),
+                sl: Number((gbpUsd.bid + 0.00300).toFixed(5)),
+                tp: Number((gbpUsd.bid - 0.00450).toFixed(5)),
+                marginUsed: calculateMarginRequired(gbpUsd, 0.25),
+                openTime: new Date().toLocaleTimeString()
+            });
+        }
+
+        // Initialize Terminal on Load
+        window.onload = function() {
+            FOREX_PAIRS.forEach(p => ensureCandleHistory(p.symbol, '1M'));
+            seedSamplePositions();
+            bindEventListeners();
+            selectCurrencyPair('EUR/USD');
+            renderPositionsAndOrders();
+            updateAccountSummaryUI();
+            resizeCanvas();
+            updateClock();
+
+            setInterval(simulateMarketTick, 650);
+            setInterval(updateClock, 1000);
+        };
+    </script>
+</body>
+</html>
